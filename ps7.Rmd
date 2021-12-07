@@ -1,0 +1,101 @@
+---
+title: "ps7"
+author: "Hannah Olson-Williams"
+date: "12/5/2021"
+output: word_document
+---
+
+### QUESTION 2 PART A 
+
+Intrinsic rate of natural increase for the russian female population of 2000 
+
+Is nma the same as B/N?! 
+nma = rate of bearing female children between ages a and a+5 
+B/N = female births / female population 
+
+preston p114: NRR = 1/l0 * sum(nFx*nLx)
+where nFx = nBx/nWx 
+```{r}
+setwd("H:/soci756")
+d= read.csv("ps7.csv")
+d = d[is.na(d$age) == FALSE,] #remove na row 
+
+#remove commas and reformat nlx values 
+d$nLx = as.numeric(gsub(",","",d$nLx))
+
+#calculate the nMa values: rate of bearing female children between ages a and a+5
+d$nma = d$B/ d$N
+d$lm = d$nma* d$nLa
+
+#subset data for maternal ages only 
+dmat = d[d$age >10 & d$age <=45,]
+r0 = log(sum(dmat$nLa*dmat$nma, na.rm = TRUE))/27 
+
+NRR = sum(dmat$nLa*dmat$nma, na.rm = TRUE)
+
+
+for (a in 15:45) {
+yrn = function(rn){
+  exp(-rn*(a+2.5))*d$nLa[d$age == a]*d$nma[d$age == a]
+}}
+
+r1 = r0 + ((yrn(r0)-1)/27)
+r2 = r1 + ((yrn(r1)-1)/27)
+r3 = r2 + ((yrn(r2)-1)/27)
+r4 = r3 + ((yrn(r3)-1)/27)
+r5 = r4 + ((yrn(r4)-1)/27)
+```
+The NRR of the population is `r NRR`. 
+After three iterations, we obtain `r r3` for the intrinsic growth rate of Russia in 2000. 
+
+
+### QUESTION 2 PART B
+The "real" mean length of generation in the Russian population of 2000:
+
+NRR = e^(r*t) -> ln(NRR) = r*t -> t = ln(NRR)/ r 
+```{r}
+t = log(NRR) / r3 
+
+t
+```
+The number of years required for the population to grow (at the intrinsic growth rate) by the factor equal to the 2000 next reproduction rate is `r t`. 
+
+### QUESTION 2 PART C
+Intrinsic age distribution of the Russian female population in 2000 
+```{r}
+d$bdenom = exp(-r3*(d$age+2.5))*(d$nLa/100000)
+b = 1/sum(d$bdenom)
+
+
+d$cstable = b*d$bdenom 
+d$cactual = d$N / sum(d$N)
+
+#print entire dataframe 
+d
+```
+
+### QUESTION 2 PART D 
+```{r}
+library(ggplot2)
+
+#make a new dataset to play nicely with ggplot 
+dplot = data.frame(age = rep(d$age, 2), c = c(d$cstable, d$cactual), group = c(rep("Intrinsic", 21), rep("Actual", 21)))
+
+ggplot(dplot) + geom_point(aes(x = age, y = c, shape = group, color = group), size = 3) +
+  xlab("Age a") + 
+  ylab("5Ca") +
+  ggtitle("Actual versus Intrinsic Age Distributions")+
+  theme_bw() +
+  theme(legend.title = element_blank())
+
+```
+The difference between the age distribution in Russia in 2000 and the age distribution of the stable equivalent population is that the stable equivalent population grows until expected age of death at around age 80. On the other hand, the actual age distribution in Russia steadily declines after age 50 as as age increases. The actual age distribution follows a less strict pattern and seemingly includes greater variation in birth and death rates.  
+Given that the intrinsic growth rate r3 that I calculated in part a has approximately 20 times greater magnitude than CRNI = -0.006, it makes sense that the actual and intrinsic age distributions are substantially different. Additionally, as stated on Preston page 148, populations in Europe and North America are expected to have large discrepancies between the intrinsic growth rate and the CRNI since large changes in fertility and mortality rates have "destabilized" these populations over time.    
+
+### QUESTION 2 PART E 
+Intrinsic death rate 
+```{r}
+idr = b-r3
+idr
+```
+The intrinsic death rate is `r idr`. 

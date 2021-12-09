@@ -110,12 +110,11 @@ a) Simulate a population with only two birth cohorts of 10,000 people each
 
 ```{r}
 
-#this simulates a lifetable style cohort with nlx at each age as the cohort ages 
-c1 = data.frame(age = d$age, nlx = round(d$nLx*10000/492543, 0)) #this is the russian birth cohort from problem 2 
-c2 = data.frame(age = d$age, nlx = round(d$nLx*10000/492543*runif(1, 0.9, 1.01), 0)) #this is the russian birth cohort from problem 2 with slightly randomized nlx values 
-c2$nlx[1] = 10000
+#this is the beginning of what will be a lifetable style table with each row representing a different age  
+c1 = data.frame(age = 1:100)
+c2 = data.frame(age = 1:100)
 
-#this simulates an individual level cohort with each id representing an unique member of the population 
+#this is the beginning of what will be an individual level table with each id representing an unique member of the population 
 p1 = data.frame(id = 1:10000)
 p2 = data.frame(id = 1:10000)
 
@@ -124,30 +123,17 @@ p2 = data.frame(id = 1:10000)
 b) Assign frailty values that are normally distributed 
 I tried to use a gamma distribution to avoid negative frailty values. 
 ```{r}
-
-#for (i in 1:nrow(c1)) {
-  #c1$frailty[i] = rnorm(1,2, sd = 1)
-  #c2$frailty[i] = rnorm(1,2, sd = 1)
-  #c1$frailty[i] = rgamma(1,2)
-  #c2$frailty[i] = rgamma(1,2)
-#}
-
-
-for (i in 1:nrow(p1)) {
-  #p1$frailty[i] = rnorm(1,2, sd = 1)
-  #p2$frailty[i] = rnorm(1,2, sd = 1)
+#need one gamma dist value per inndividual
+for (i in 1:nrow(p1)) { 
   p1$frailty[i] = rgamma(1,2)
   p2$frailty[i] = rgamma(1,2)
 }
 
+#sort frailty values such that the largest frailty values have the smallest indices 
+p1 = p1[order(p1$frailty, decreasing = TRUE),]
+p2 = p2[order(p2$frailty, decreasing = TRUE),]
 
-p1 = p1[order(p1$frailty),]
-p2 = p2[order(p2$frailty),]
 
-#for (i in 2:nrow(c1)) {
-#  c1$nlx[i] = c1$nlx[i-1] * c1$frailty[i-1]
-#  c2$nlx[i] = c2$nlx[i-1] * c2$frailty[i-1]
-#}
 
 ```
 
@@ -160,100 +146,85 @@ Gompertz: u(age) = alpha * e^(Beta)*age
 alpha = 0.002 #these values were selected from Alexander's plot 
 Beta = 0.05 
 
-#not needed for now 
-#mort = function(age) {
-#  if(age<35) {
-#  print(alpha)
-#  }else if(age>=35) {
-#  print(alpha*exp(Beta*age))  
-#  }
-#}
 
 #death rates are 1.3 times greater in cohort 2 than in cohort 1 
-c1$mort = as.numeric(ifelse(c1$age>=35, alpha*exp(Beta*c1$age), "")) #this is function mu(x) from alexander 
+#this is the gompertz function mu(x) 
+#when age is <35, i do not calculate a mortality rate
+c1$mort = as.numeric(ifelse(c1$age>=35, alpha*exp(Beta*c1$age), ""))
 c2$mort = as.numeric(c1$mort)*1.3
 
-c1$alive[1:7] = 10000
-c2$alive[1:7] = 10000
-for (i in 8:length(c1$age)){
-  c1$alive[i] = c1$alive[i-1] - (c1$alive[i-1]*c1$mort[i])
-  c2$alive[i] = c2$alive[i-1] - (c2$alive[i-1]*c2$mort[i])
+#initialize new column to store the number of survivors 
+c1$nalive = NA  
+c2$nalive = NA
+
+#when age is <35, assume that no one dies since no mortality -> survivors = l0 
+c1$nalive[1:34] = 10000 
+c2$nalive[1:34] = 10000
+
+#use mortality value to calculate number of survivors at each age >=35 
+for (i in 35:length(c1$age)){
+  c1$nalive[i] = c1$nalive[i-1] - (c1$nalive[i-1]*c1$mort[i])
+  c2$nalive[i] = c2$nalive[i-1] - (c2$nalive[i-1]*c2$mort[i])
 }
 
-#calculate frailty for each age group 
-c1$frail = rep(0,length(c1$age))
-c1$frail[8] = mean(p1$frailty[1:round(c1$alive[8], 0)])
+#calculate frailty for each age  
+#initialize frail columns 
+c1$frail = rep(0,length(c1$age)) 
 c2$frail = rep(0,length(c2$age))
-c2$frail[8] = mean(p2$frailty[1:round(c2$alive[8], 0)])
 
-for (i in 9:length(c1$age)){
- c1$frail[i] = mean(p1$frailty[round(c1$alive[i-1],0):round(c1$alive[i], 0)])
- c2$frail[i] = mean(p1$frailty[round(c2$alive[i-1],0):round(c2$alive[i], 0)])
- 
+#take average of frailty values when age <35 (this is necessary to create initial conditions for loop below)
+c1$frail[35] = mean(p1$frailty[1:round(c1$nalive[35], 0)])
+c2$frail[35] = mean(p2$frailty[1:round(c2$nalive[35], 0)])
+
+#find mean frailty of individuals still alive at each age (note that the most frail die first/youngest)
+for (i in 36:length(c1$age)){
+ c1$frail[i] = mean(p1$frailty[round(c1$nalive[i-1],0):round(c1$nalive[i], 0)])
+ c2$frail[i] = mean(p1$frailty[round(c2$nalive[i-1],0):round(c2$nalive[i], 0)])
 }
 
 
-#c1$survive = exp((alpha/Beta) * (exp(Beta*c1$age)-1)) #this is function l(x) from alexander
-#c2$survive = exp((alpha*1.3/Beta) * (exp(Beta*c2$age)-1))
-#c1$deathdensity = alpha*exp(Beta*c1$age)*exp((-alpha/Beta)*exp(Beta*c1$age)-1)
-#c2$deathdensity = alpha*exp(Beta*c2$age)*exp((-alpha/Beta)*exp(Beta*c2$age)-1)
 
-#this is from alexander's page... an attempt to interpret her parameter D 
-#Dc1 = sum(c1$frailty) 
-#Dc2 = sum(c2$frailty) #i'm unsure if this is the correct interpretation/use of frailty, but it seems to make some amount of sense....
-#c1$ndeath = Dc1*c1$deathdensity
 
-pi0 = 0.95
-c1$pi = (pi0*c1$alive)/ (pi0*c1$alive + (1-pi0)*c2$alive) #this is eq2 from 
-c1$meanmort = c1$pi*c1$mort + (1-c1$pi)*c2$mort
+pi0 = 0.95 #chosen based on values used in vaupel and yashin 
+c1$pi = (pi0*c1$nalive)/ (pi0*c1$nalive + (1-pi0)*c2$nalive) #this is eq3 from vaupel and yashin
+c1$meanmort = c1$pi*c1$mort + (1-c1$pi)*c2$mort #eq4 from vaupel and yashin 
+c1$meanfrail = c1$pi*c1$frail + (1-c1$pi)*c2$frail #I assume that eq3 and eq4 hold for frailty values as well as mortality 
 
 ```
 
-pi(x) = proportion of surviving cohort at age x 
-u1(x) = hazard rate for c1 
-u2(x) = hazard rate for c2 
 
-pi(x) = pi(0)*p1 / ( pi(0)*p1 + (1 - pi(0))*p2 ) 
 
 
 
 
 ### PLOTS OF MORTALITY RATES AND FRAILTY BY AGE FOR EACH COHORT AND AS A WHOLE 
 ```{r}
-ggplot(c1) + geom_point(aes(x=age, y=log(mort))) +
-  geom_point(aes(x=age, y=log(meanmort)))
 
-ggplot(c2) + geom_point(aes(x=age, y = log(mort))) + 
-  geom_point(aes(x=age, y = log(c1$meanmort)))
+#make one dataset for easier plotting 
+# (i probably should have been working from a single dataset this entire time.....)
+pc1 = c1[c1$age > 34,] #remove ages under 35 since they don't contain any information 
+pc2 = c2[c2$age > 34,]
+pdata = data.frame(age = rep(pc1$age,3), mort = c(pc1$mort, pc2$mort, pc1$meanmort), frail = c(pc1$frail, pc2$frail, pc1$meanfrail), cohort = c(rep("Cohort 1", 66), rep("Cohort 2",66), rep("Overall",66)))
+
+
+
+#plot for mortality rates versus age
+#note that I did not log transform these values.... 
+ggplot(pdata) + geom_point(aes(x=age, y=mort, shape = cohort, color = cohort), size = 3)+
+  xlab("Age") + 
+  ylab("Mortality") +
+  ggtitle("Mortality by Age")+
+  theme_bw() +
+  theme(legend.title = element_blank())
+
+#plot for frailty versus age 
+ggplot(pdata) + geom_point(aes(x=age, y=frail, shape = cohort, color = cohort), size=3)+
+  xlab("Age") + 
+  ylab("Frailty") +
+  ggtitle("Frailty by Age")+
+  theme_bw() +
+  theme(legend.title = element_blank())
 ```
-
-
-
-# HOMEWORK-RELATED NOTES FROM CLASS ON DEC 7: 
-
-follow vaupel and yashin paper 
-alpha and beta: get from monica paper/website referenced by jenna on canvas note 
-shouldn't be too sensitive to alpha and beta choices 
-use pi from vaupel and yashin to average cohorts to plot final dist (? i think that's what becca's q meant) 
-
-
-how to use frailty? 
-include frailty as part of mortality function (hazard) 
-because we've been working in discrete time, another way to do this is to sort 
-treat frailty as individual probability (proclivity) of death
-keep an indicator var at each age to flag who is alive at each age 
-sort survivors on frailty 
-once we have deaths for cohort, we can change the flag for people who are most frail 
-
-CHECK maybe should gamma distribute frailty so there's no negative vals; or use normal dist with mean=2 and sd =1 
-
-multiply one cohort by 1.3 when using the downloaded mort rates (? not totally sure what this means?) 
-
-
-leslie matrix as a markov process 
-if nrr implied by relationship between fertility and mortality then pop explodes 
-eigenvector will tell us whether relationship goes to infinity or zero 
-renewal matrix versus markov : renewal matrix uses counts rather than probability dist -> can leslie and pop vector be rewritten such that pop vector is a proportion instead of pop vector 
 
 
 

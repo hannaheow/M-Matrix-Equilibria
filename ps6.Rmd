@@ -1,0 +1,950 @@
+---
+title: "PS6"
+author: "Hannah Olson-Williams"
+date: "11/8/2021"
+output: word_document
+---
+
+Assumptions: the population is closed to immigration and emigration, the population has only one sex (female) and two races (Black and white), all fertility is confined between exact ages 15 and 45, age-specific fertility rates are constant within the interval 15 to 45, and fertility, mortality, and mobility rates are constant over time. 
+
+M matrix must be nxn 
+P(t+1) = M*P(t) 
+where P(t) is nx1 and has edu subgroups nested within age groups
+n = 10 in this case since there are ten different age groups  
+
+S = p(t) * (proportion of people age x-5 to x who will be alive 5yrs later in stationary pop)
+s = rxr submatrices of age specific survival and mobility probabilities; all s are upper triangular since it isn't possible to "lose" education; r = the number of edu categories.  
+b = rxr submatrices of age specific birth and mobility probabilities adjusted for mortality 
+
+
+"Finally, I assume that fertility rates for women below age 15 or above
+age 45 are zero. Given these simplifications, the Sat are all diagonal submatrices in
+which the Sijat equal the age-education specific 5-year survival rates if i 5 j and
+equal zero if i fi j. Specifically, when i 5 j, Sijat 5 5Li,a15,t/ 5Liat, where 5Liat is the
+life table population between ages a and a 1 5 for education group i in year t." 
+
+->Basically, the S matrices are diagonal only. This means that there is no intragenerational mobility. Edu attainment is assigned at birth.
+
+Since GRR = n*sum(nFx), then we can use the nFx from GRR.
+
+### AN M MATRIX FOR BLACK WOMEN 
+
+```{r}
+setwd("H:/soci756")
+d = read.csv("ps6nlx.csv")
+db = d[1:50,]
+dbm = data.frame(row.names = c(1,2,3,4,5,6,7,8,9,10))
+for (i in 1:5) {
+  dbm[,i] = db$nLx[((1+((i-1)*10)):(10+((i-1)*10)))]
+}
+# the rows now represent age and the cols now represent edu cat 
+
+GRRb = c(2.18, 2.18, 1.67, 1.43, 1.01) 
+fxb = (GRRb/7)/5 #each of these represents fertility rate for a different edu category 
+Mb = matrix(data = c(0.289, 0.079, 0.025, 0.033, 0,
+                     0.268, 0.35, 0.19, 0.038, 0.032,
+                     0.243, 0.278, 0.386, 0.243, 0.163, 
+                     0.126, 0.164, 0.212, 0.496, 0.371, 
+                     0.073, 0.129, 0.188, 0.189, 0.434), nrow = 5, ncol =5)
+
+sb = matrix(nrow = 9, ncol = 5)
+s = matrix(nrow = 5, ncol = 5)
+SB = matrix(list(rep(s, 9)))
+
+for (i in 1:9) { #this is for age
+  for (j in 1:5) { #this is for edu
+    sb[i,j] = dbm[i+1,j]/dbm[i,j]
+  }
+}
+
+for (i in 1:9) {
+  SB[[i]] = diag(sb[i,], nrow =5, ncol = 5)
+  } #each S[[i]] represents an Sat matrix 
+ 
+#bb = matrix(nrow = 5, ncol = 5)
+#BB = matrix(list(rep(bb, 8)))
+peredub = c(0.376, 0.29, 0.233, 0.063, 0.038)
+
+  
+  
+ 
+bb4 = matrix(nrow = 5, ncol =5)
+bb5 = matrix(nrow = 5, ncol =5)
+bb6 = matrix(nrow = 5, ncol =5)
+bb7 = matrix(nrow = 5, ncol =5)
+bb8 = matrix(nrow = 5, ncol =5)
+bb9 = matrix(nrow = 5, ncol =5)
+#for (k in 2:10) { #age ; not sure why this loop structure doesn't work but i can't spend anymore time perfecting it
+for (i in 1:5) { #moms educat 
+  for (j in 1:5) { #daughters educat 
+    #BB[[k-1]][i,j] = (dbm[k,j]/(2*100000*peredub[j])*(fxb[j] + S[[k-1]][j,j]*fxb[j]))*Mb[i,j]
+    bb4[i,j] = (dbm[1,j]/(2*100000)*(fxb[j] + SB[[4]][i,j]*fxb[j]))*Mb[i,j]
+    bb5[i,j] = (dbm[1,j]/(2*100000)*(fxb[j] + SB[[5]][i,j]*fxb[j]))*Mb[i,j]
+    bb6[i,j] = (dbm[1,j]/(2*100000)*(fxb[j] + SB[[6]][i,j]*fxb[j]))*Mb[i,j]
+    bb7[i,j] = (dbm[1,j]/(2*100000)*(fxb[j] + SB[[7]][i,j]*fxb[j]))*Mb[i,j]
+    bb8[i,j] = (dbm[1,j]/(2*100000)*(fxb[j] + SB[[8]][i,j]*fxb[j]))*Mb[i,j]
+    bb9[i,j] = (dbm[1,j]/(2*100000)*(fxb[j] + SB[[9]][i,j]*fxb[j]))*Mb[i,j]
+    
+    #bb4[i,j] = (dbm[4,j]/(2*100000*peredub[j])*(fxb[j] + SB[[3]][j,j]*fxb[j]))*Mb[i,j]
+    #bb5[i,j] = (dbm[5,j]/(2*100000*peredub[j])*(fxb[j] + SB[[4]][j,j]*fxb[j]))*Mb[i,j]
+    #bb6[i,j] = (dbm[6,j]/(2*100000*peredub[j])*(fxb[j] + SB[[5]][j,j]*fxb[j]))*Mb[i,j]
+    #bb7[i,j] = (dbm[7,j]/(2*100000*peredub[j])*(fxb[j] + SB[[6]][j,j]*fxb[j]))*Mb[i,j]
+    #bb8[i,j] = (dbm[8,j]/(2*100000*peredub[j])*(fxb[j] + SB[[7]][j,j]*fxb[j]))*Mb[i,j]
+    #bb9[i,j] = (dbm[9,j]/(2*100000*peredub[j])*(fxb[j] + SB[[8]][j,j]*fxb[j]))*Mb[i,j]
+    #we assume that F is the same for all age categories 
+    #we assume that the percent distribution of women in each edu category is constant
+    #we assume that l0 does not need to be divided by the total number of women in each edu category...this is how Sara calculated her matrices, so i'm proceeding without using the proportions of women at each edu level.  
+  }
+}
+
+
+zero = matrix(0, nrow=5, ncol = 5)
+lb1 = cbind(zero, zero, zero, bb4, bb5, bb6, bb7, bb8, bb9, zero)
+lb2 = cbind(SB[[1]], zero, zero, zero, zero, zero, zero, zero, zero, zero)
+lb3 = cbind( zero, SB[[2]],zero, zero, zero, zero, zero, zero, zero, zero)
+lb4 = cbind( zero, zero, SB[[3]],zero, zero, zero, zero, zero, zero, zero)
+lb5 = cbind( zero, zero, zero,SB[[4]], zero, zero, zero, zero, zero, zero)
+lb6 = cbind( zero, zero, zero, zero, SB[[5]],zero, zero, zero, zero, zero)
+lb7 = cbind( zero, zero, zero, zero, zero, SB[[6]],zero, zero, zero, zero)
+lb8 = cbind( zero, zero, zero, zero, zero, zero, SB[[7]],zero, zero, zero)
+lb9 = cbind( zero, zero, zero, zero, zero, zero, zero, SB[[8]],zero, zero)
+lb10 = cbind( zero, zero, zero, zero, zero, zero, zero, zero, SB[[9]],zero)
+leslieb = rbind(lb1,lb2,lb3,lb4,lb5,lb6,lb7,lb8,lb9,lb10)
+
+```
+
+
+
+### AN M MATRIX FOR WHITE WOMEN 
+```{r}
+
+dw = d[51:100,]
+Mw = matrix(data = c(0.132, 0.034, 0.014, 0.01, 0.001, 
+                     0.179, 0.15, 0.061, 0.027, 0.033, 
+                     0.485, 0.427, 0.457, 0.243, 0.143, 
+                     0.13, 0.208, 0.25, 0.338, 0.259, 
+                     0.075, 0.18, 0.217, 0.381, 0.564), nrow = 5, ncol = 5)
+
+GRRw = c(1.76, 1.81, 1.62, 1.54, 1.27)
+
+
+
+
+
+dwm = data.frame(row.names = c(1,2,3,4,5,6,7,8,9,10))
+for (i in 1:5) {
+  dwm[,i] = dw$nLx[((1+((i-1)*10)):(10+((i-1)*10)))]
+}
+# the rows now represent age and the cols now represent edu cat 
+
+ 
+fxw = (GRRw/7)/5 #each of these represents fertility rate for a different edu category 
+
+
+sw = matrix(nrow = 9, ncol = 5)
+s = matrix(nrow = 5, ncol = 5)
+SW = matrix(list(rep(s, 9)))
+
+for (i in 1:9) { #this is for age
+  for (j in 1:5) { #this is for edu
+    sw[i,j] = dwm[i+1,j]/dwm[i,j]
+  }
+}
+
+for (i in 1:9) {
+  SW[[i]] = diag(sw[i,], nrow =5, ncol = 5)
+  } #each S[[i]] represents an Sat matrix 
+ 
+#bb = matrix(nrow = 5, ncol = 5)
+#BB = matrix(list(rep(bb, 8)))
+pereduw = c(0.172, 0.219, 0.421, 0.119, 0.069)
+
+  
+  
+ 
+bw4 = matrix(nrow = 5, ncol =5)
+bw5 = matrix(nrow = 5, ncol =5)
+bw6 = matrix(nrow = 5, ncol =5)
+bw7 = matrix(nrow = 5, ncol =5)
+bw8 = matrix(nrow = 5, ncol =5)
+bw9 = matrix(nrow = 5, ncol =5)
+#for (k in 2:10) { #age ; not sure why this loop structure doesn't work but i can't spend anymore time perfecting it
+for (i in 1:5) { #moms educat 
+  for (j in 1:5) { #daughters educat 
+    #BB[[k-1]][i,j] = (dbm[k,j]/(2*100000*peredub[j])*(fxb[j] + S[[k-1]][j,j]*fxb[j]))*Mb[i,j]
+    
+    #testing several different possibilities for how/why my B matrices do not match Sara's
+    #bw4[i,j] = (dwm[4,j]/(2*100000*pereduw[j])*(fxw[j] + SW[[3]][j,j]*fxw[j]))*Mw[i,j]
+    #bw5[i,j] = (dwm[5,j]/(2*100000*pereduw[j])*(fxw[j] + SW[[4]][j,j]*fxw[j]))*Mw[i,j]
+    #bw6[i,j] = (dwm[6,j]/(2*100000*pereduw[j])*(fxw[j] + SW[[5]][j,j]*fxw[j]))*Mw[i,j]
+    #bw7[i,j] = (dwm[7,j]/(2*100000*pereduw[j])*(fxw[j] + SW[[6]][j,j]*fxw[j]))*Mw[i,j]
+    #bw8[i,j] = (dwm[8,j]/(2*100000*pereduw[j])*(fxw[j] + SW[[7]][j,j]*fxw[j]))*Mw[i,j]
+    #bw9[i,j] = (dwm[9,j]/(2*100000*pereduw[j])*(fxw[j] + SW[[8]][j,j]*fxw[j]))*Mw[i,j]
+    
+    bw4[i,j] = (dwm[1,j]/(2*100000)*(fxw[j] + SW[[4]][i,j]*fxw[j]))*Mw[i,j]
+    bw5[i,j] = (dwm[1,j]/(2*100000)*(fxw[j] + SW[[5]][i,j]*fxw[j]))*Mw[i,j]
+    bw6[i,j] = (dwm[1,j]/(2*100000)*(fxw[j] + SW[[6]][i,j]*fxw[j]))*Mw[i,j]
+    bw7[i,j] = (dwm[1,j]/(2*100000)*(fxw[j] + SW[[7]][i,j]*fxw[j]))*Mw[i,j]
+    bw8[i,j] = (dwm[1,j]/(2*100000)*(fxw[j] + SW[[8]][i,j]*fxw[j]))*Mw[i,j]
+    bw9[i,j] = (dwm[1,j]/(2*100000)*(fxw[j] + SW[[9]][i,j]*fxw[j]))*Mw[i,j]
+    #we assume that F is the same for all age categories 
+    #we assume that the percent distribution of women in each edu category is constant  
+  }
+}
+
+
+zero = matrix(0, nrow=5, ncol = 5)
+lw1 = cbind(zero, zero, zero, bw4, bw5, bw6, bw7, bw8, bw9, zero)
+lw2 = cbind(SW[[1]], zero, zero, zero, zero, zero, zero, zero, zero, zero)
+lw3 = cbind( zero, SW[[2]],zero, zero, zero, zero, zero, zero, zero, zero)
+lw4 = cbind( zero, zero, SW[[3]],zero, zero, zero, zero, zero, zero, zero)
+lw5 = cbind( zero, zero, zero,SW[[4]], zero, zero, zero, zero, zero, zero)
+lw6 = cbind( zero, zero, zero, zero, SW[[5]],zero, zero, zero, zero, zero)
+lw7 = cbind( zero, zero, zero, zero, zero, SW[[6]],zero, zero, zero, zero)
+lw8 = cbind( zero, zero, zero, zero, zero, zero, SW[[7]],zero, zero, zero)
+lw9 = cbind( zero, zero, zero, zero, zero, zero, zero, SW[[8]],zero, zero)
+lw10 = cbind( zero, zero, zero, zero, zero, zero, zero, zero, SW[[9]],zero)
+lesliew = rbind(lw1,lw2,lw3,lw4,lw5,lw6,lw7,lw8,lw9,lw10)
+
+```
+
+My matrices do not perfectly match Sara's (though they are close)..... 
+
+
+
+1. What decisions did you have to make to work with the data that you received for
+this assignment? Do these decisions require assumptions?
+
+Assumptions: the population is closed to immigration and emigration, the population has only one sex (female) and two races (Black and white), all fertility is confined between exact ages 15 and 45, age-specific fertility rates are constant within the interval 15 to 45, and fertility, mortality, and mobility rates are constant over time
+
+Additionally I assume that there is no intragenerational educational mobility. Education attainment is assigned at birth.   
+
+Additionally, for the rest of the assignment, I assume that the Leslie matrices calculated above are correct and represent the data well. (They do not perfectly match Sara's Leslie matrices, but I am unable to determine exactly why...)
+
+
+2. What equilibrium distributions of educational attainment for Black and White
+people are implied by the data in Tables 1-4?
+
+Preston suggests that a stable equivalent population will be observed if rates continue for 60-70 years.... 
+I'm using 100 iterations (500 years)  
+
+```{r}
+#this chunk is unnecessary because it's simpler to find equilibria by exponentiating instead 
+
+#pb = matrix(nrow = 50, ncol = 100)
+#pw = matrix(nrow = 50, ncol = 100)
+#pb[1:50, 1] = leslieb %*% nb
+#pw[1:50, 1] = lesliew %*% nw
+
+#for (i in 2:100) {
+#pb[1:50, i] = leslieb %*% pb[1:50, i-1]
+#pw[1:50, i] = lesliew %*% pw[1:50, i-1]
+#}
+
+#pw[1:50, 100]
+#pb[1:50, 100]
+
+nb=as.matrix(db$nLx)
+nw=as.matrix(dw$nLx)
+eqb = leslieb^100 %*% nb
+eqw = lesliew^100 %*% nw 
+
+#this is the projection at time t+ 5*100 -> projection after 500 years have passed 
+
+
+#rearrange so the projection data is more readable
+#now rows are ages and columns are edu groups 
+#sw = data.frame(row.names = c(1,2,3,4,5,6,7,8,9,10))
+#for (i in 1:5) {
+#  sw[,i] = pw[1:50,100][((1+((i-1)*10)):(10+((i-1)*10)))]
+#  sum(pw[1:50,100][((1+((i-1)*10)):(10+((i-1)*10)))])
+#}
+
+
+#sb = data.frame(row.names = c(1,2,3,4,5,6,7,8,9,10))
+#for (i in 1:5) {
+#  sb[,i] = pb[1:50,100][((1+((i-1)*10)):(10+((i-1)*10)))]
+#}
+
+#wavg = (sum(pw[1:50,100][1:10])*4 + sum(pw[1:50,100][11:20])*10 + sum(pw[1:50,100][21:30])*12 + sum(pw[1:50,100][31:40])*14 + sum(pw[1:50,100][41:50])*16) / sum(pw[1:50,100])
+
+wavg = (sum(eqw[1:10])*4 + sum(eqw[11:20])*10 + sum(eqw[21:30])*12 + sum(eqw[31:40])*14 + sum(eqw[41:50])*16) / sum(eqw)
+wu12 = (sum(eqw[1:10]) + sum(eqw[11:20]))/sum(eqw)
+wg16 = sum(eqw[41:50])/sum(eqw)
+
+
+#bavg = (sum(pb[1:50,100][1:10])*4 + sum(pb[1:50,100][11:20])*10 + sum(pb[1:50,100][21:30])*12 + sum(pb[1:50,100][31:40])*14 + sum(pb[1:50,100][41:50])*16) / sum(pb[1:50,100])
+
+bavg = (sum(eqb[1:10])*4 + sum(eqb[11:20])*10 + sum(eqb[21:30])*12 + sum(eqb[31:40])*14 + sum(eqb[41:50])*16) / sum(eqb)
+bu12 = (sum(eqb[1:10]) + sum(eqb[11:20]))/sum(eqb)
+bg16 = sum(eqb[41:50])/sum(eqb)
+
+
+
+#test to see if mean is different for different iteration of pb 
+#bavg98 = (sum(pb[1:50,98][1:10])*4 + sum(pb[1:50,98][11:20])*10 + sum(pb[1:50,98][21:30])*12 + sum(pb[1:50,98][31:40])*14 + sum(pb[1:50,98][41:50])*16) / sum(pb[1:50,98])
+
+t2 = as.table(c(wavg, bavg, wavg-bavg, wu12, bu12, wu12-bu12, wg16, bg16, wg16-bg16)) 
+names(t2) = c("White mean", "Black mean", "W-B", "White <12", "Black <12", "W-B <12", "White 16+", "Black 16+", "W-B 16+")
+t2
+```
+A stable population will be achieved over a long period of time.... For now, I assume that a stable population will be achieved after 500 years (100 iterations). 
+
+I'm not sure why or how the numbers of black women per each education and age category after projection (written as the sb matrix above) are such small values... is this truly what happens after many years? There are few Black women remaining? Perhaps something is incorrect with my leslie matrix? Additionally, I'm uncertain how exactly to determine when equilibrium is reached....The 99th iteration of the projection for black women (sb[,99] as calculated above) does not appear to be the same as the 100th iteration of the projection for black women (sb[,100] as calculated above). The same is true of iterations of the projection for white women. However, this does not matter since the proportions of women in each category remain the same - the population is at equilibrium. 
+
+At equilibrium, Black women have an average of 11.27 years of education while white women have an average of 11.41 years of education. 
+
+
+
+
+3. To what degree are differences in the (equilibrium) education distributions for
+Black and White people attributable to differences in fertility patterns between
+Black and White women?
+
+To understand differences in equilibrium attributable to differences in fertility, I compute equilibria for each population using a common set of fertility rates. In this case, I change white fertility rates to match black fertility rates. 
+```{r}
+
+bw43 = matrix(nrow = 5, ncol =5)
+bw53 = matrix(nrow = 5, ncol =5)
+bw63 = matrix(nrow = 5, ncol =5)
+bw73 = matrix(nrow = 5, ncol =5)
+bw83 = matrix(nrow = 5, ncol =5)
+bw93 = matrix(nrow = 5, ncol =5)
+#for (k in 2:10) { #age ; not sure why this loop structure doesn't work but i can't spend anymore time perfecting it
+for (i in 1:5) { #moms educat 
+  for (j in 1:5) { #daughters educat 
+    #BB[[k-1]][i,j] = (dbm[k,j]/(2*100000*peredub[j])*(fxb[j] + S[[k-1]][j,j]*fxb[j]))*Mb[i,j]
+    
+    #testing several different possibilities for how/why my B matrices do not match Sara's
+    #bw4[i,j] = (dwm[4,j]/(2*100000*pereduw[j])*(fxw[j] + SW[[3]][j,j]*fxw[j]))*Mw[i,j]
+    #bw5[i,j] = (dwm[5,j]/(2*100000*pereduw[j])*(fxw[j] + SW[[4]][j,j]*fxw[j]))*Mw[i,j]
+    #bw6[i,j] = (dwm[6,j]/(2*100000*pereduw[j])*(fxw[j] + SW[[5]][j,j]*fxw[j]))*Mw[i,j]
+    #bw7[i,j] = (dwm[7,j]/(2*100000*pereduw[j])*(fxw[j] + SW[[6]][j,j]*fxw[j]))*Mw[i,j]
+    #bw8[i,j] = (dwm[8,j]/(2*100000*pereduw[j])*(fxw[j] + SW[[7]][j,j]*fxw[j]))*Mw[i,j]
+    #bw9[i,j] = (dwm[9,j]/(2*100000*pereduw[j])*(fxw[j] + SW[[8]][j,j]*fxw[j]))*Mw[i,j]
+    
+    bw43[i,j] = (dwm[1,j]/(2*100000)*(fxb[j] + SW[[4]][i,j]*fxb[j]))*Mw[i,j]
+    bw53[i,j] = (dwm[1,j]/(2*100000)*(fxb[j] + SW[[5]][i,j]*fxb[j]))*Mw[i,j]
+    bw63[i,j] = (dwm[1,j]/(2*100000)*(fxb[j] + SW[[6]][i,j]*fxb[j]))*Mw[i,j]
+    bw73[i,j] = (dwm[1,j]/(2*100000)*(fxb[j] + SW[[7]][i,j]*fxb[j]))*Mw[i,j]
+    bw83[i,j] = (dwm[1,j]/(2*100000)*(fxb[j] + SW[[8]][i,j]*fxb[j]))*Mw[i,j]
+    bw93[i,j] = (dwm[1,j]/(2*100000)*(fxb[j] + SW[[9]][i,j]*fxb[j]))*Mw[i,j]
+    #we assume that F is the same for all age categories 
+    #we assume that the percent distribution of women in each edu category is constant  
+    
+    #NEW FOR THIS QUESTION:
+    # ALL WHITE FERTILITY RATES ARE NOW BLACK FERTILITY RATES -> FXW ARE NOW FXB 
+  }
+}
+
+
+#zero = matrix(0, nrow=5, ncol = 5)
+lw13 = cbind(zero, zero, zero, bw43, bw53, bw63, bw73, bw83, bw93, zero)
+#only the first row has changed.... so the rest can be commented out 
+#lw2 = cbind(SW[[1]], zero, zero, zero, zero, zero, zero, zero, zero, zero)
+#lw3 = cbind( zero, SW[[2]],zero, zero, zero, zero, zero, zero, zero, zero)
+#lw4 = cbind( zero, zero, SW[[3]],zero, zero, zero, zero, zero, zero, zero)
+#lw5 = cbind( zero, zero, zero,SW[[4]], zero, zero, zero, zero, zero, zero)
+#lw6 = cbind( zero, zero, zero, zero, SW[[5]],zero, zero, zero, zero, zero)
+#lw7 = cbind( zero, zero, zero, zero, zero, SW[[6]],zero, zero, zero, zero)
+#lw8 = cbind( zero, zero, zero, zero, zero, zero, SW[[7]],zero, zero, zero)
+#lw9 = cbind( zero, zero, zero, zero, zero, zero, zero, SW[[8]],zero, zero)
+#lw10 = cbind( zero, zero, zero, zero, zero, zero, zero, zero, SW[[9]],zero)
+lesliew3 = rbind(lw13,lw2,lw3,lw4,lw5,lw6,lw7,lw8,lw9,lw10)
+
+
+
+eqw3 = lesliew3^100 %*% nw 
+
+#this is the projection at time t+ 5*100 -> projection after 500 years have passed 
+
+wavg3 = (sum(eqw3[1:10])*4 + sum(eqw3[11:20])*10 + sum(eqw3[21:30])*12 + sum(eqw3[31:40])*14 + sum(eqw3[41:50])*16) / sum(eqw3)
+wu123 = (sum(eqw3[1:10]) + sum(eqw3[11:20]))/sum(eqw3)
+wg163 = sum(eqw3[41:50])/sum(eqw3)
+
+
+t3 = data.frame(NoAdjustment = c(wavg, bavg, wavg-bavg, wu12, bu12, wu12-bu12, wg16, bg16, wg16-bg16), 
+                SameFertility = c(wavg3, bavg, wavg3-bavg, wu123, bu12, wu123-bu12, wg163, bg16, wg163-bg16))
+rownames(t3) = c("White mean", "Black mean", "W-B", "White<12", "Black<12", "W-B<12", "White16+", "Black16+", "W-B16+")
+t(t3)
+
+
+```
+
+After setting white fertility rates to match black fertility rates, the average education of white females is unchanged. Therefore the differences in the equilibrium education distributions for black and white people cannot be explained through differences in fertility rates. 
+
+
+4. To what degree are differences in the (equilibrium) education distributions for
+Black and White people attributable to differences in maternal mortality patterns
+between Black and White women?
+
+To understand differences in equilibrium attributable to differences in maternal mortality, I compute equilibria for each population using a common set of survival rates for people who are maternal age. In this case, I change white survival rates to match black survival rates for maternal ages 15-45. 
+
+
+```{r}
+
+bw44 = matrix(nrow = 5, ncol =5)
+bw54 = matrix(nrow = 5, ncol =5)
+bw64 = matrix(nrow = 5, ncol =5)
+bw74 = matrix(nrow = 5, ncol =5)
+bw84 = matrix(nrow = 5, ncol =5)
+bw94 = matrix(nrow = 5, ncol =5)
+#for (k in 2:10) { #age ; not sure why this loop structure doesn't work but i can't spend anymore time perfecting it
+for (i in 1:5) { #moms educat 
+  for (j in 1:5) { #daughters educat 
+    
+    bw44[i,j] = (dwm[1,j]/(2*100000)*(fxw[j] + SB[[4]][i,j]*fxw[j]))*Mw[i,j]
+    bw54[i,j] = (dwm[1,j]/(2*100000)*(fxw[j] + SB[[5]][i,j]*fxw[j]))*Mw[i,j]
+    bw64[i,j] = (dwm[1,j]/(2*100000)*(fxw[j] + SB[[6]][i,j]*fxw[j]))*Mw[i,j]
+    bw74[i,j] = (dwm[1,j]/(2*100000)*(fxw[j] + SB[[7]][i,j]*fxw[j]))*Mw[i,j]
+    bw84[i,j] = (dwm[1,j]/(2*100000)*(fxw[j] + SB[[8]][i,j]*fxw[j]))*Mw[i,j]
+    bw94[i,j] = (dwm[1,j]/(2*100000)*(fxw[j] + SB[[9]][i,j]*fxw[j]))*Mw[i,j]
+    #we assume that F is the same for all age categories 
+    #we assume that the percent distribution of women in each edu category is constant  
+  }
+}
+
+lw14 = cbind(zero, zero, zero, bw44, bw54, bw64, bw74, bw84, bw94, zero)
+lw24 = cbind(SW[[1]], zero, zero, zero, zero, zero, zero, zero, zero, zero)
+lw34 = cbind( zero, SW[[2]],zero, zero, zero, zero, zero, zero, zero, zero)
+lw44 = cbind( zero, zero, SW[[3]],zero, zero, zero, zero, zero, zero, zero)
+lw54 = cbind( zero, zero, zero,SB[[4]], zero, zero, zero, zero, zero, zero)
+lw64 = cbind( zero, zero, zero, zero, SB[[5]],zero, zero, zero, zero, zero)
+lw74 = cbind( zero, zero, zero, zero, zero, SB[[6]],zero, zero, zero, zero)
+lw84 = cbind( zero, zero, zero, zero, zero, zero, SB[[7]],zero, zero, zero)
+lw94 = cbind( zero, zero, zero, zero, zero, zero, zero, SB[[8]],zero, zero)
+lw104 = cbind( zero, zero, zero, zero, zero, zero, zero, zero, SB[[9]],zero)
+lesliew4 = rbind(lw14,lw24,lw34,lw44,lw54,lw64,lw74,lw84,lw94,lw104)
+
+#i should write this as a function so i don't have to keep copy pasting... 
+eqw4 = lesliew4^100 %*% nw 
+
+#this is the projection at time t+ 5*100 -> projection after 500 years have passed 
+
+wavg4 = (sum(eqw4[1:10])*4 + sum(eqw4[11:20])*10 + sum(eqw4[21:30])*12 + sum(eqw4[31:40])*14 + sum(eqw4[41:50])*16) / sum(eqw4)
+wu124 = (sum(eqw4[1:10]) + sum(eqw4[11:20]))/sum(eqw4)
+wg164 = sum(eqw4[41:50])/sum(eqw4)
+
+
+t4 = data.frame(NoAdjustment = c(wavg, bavg, wavg-bavg, wu12, bu12, wu12-bu12, wg16, bg16, wg16-bg16), 
+                SameFertility = c(wavg3, bavg, wavg3-bavg, wu123, bu12, wu123-bu12, wg163, bg16, wg163-bg16),
+                SameMaternalMort = c(wavg4, bavg, wavg4-bavg, wu124, bu12, wu124-bu12, wg164, bg16, wg164-bg16))
+rownames(t4) = c("White mean", "Black mean", "W-B", "White<12", "Black<12", "W-B<12", "White16+", "Black16+", "W-B16+")
+t(t4)
+
+
+```
+
+For all age groups and for all educational categories, the effect of maternal morality is greater than the effect of fertility on differences in education distributions between white and black people.  
+
+After setting the white maternal mortality schedule to match the black maternal morality schedule, the average years of education for white women decreased by approximately 1.5 years such that the average years of white people is lower than the average years of black people. Therefore, maternal mortality appears to have a large impact on educational attainment. The differences in equilibrium educaiton distributions for white and black people are largely attributable to maternal mortality.   
+
+
+5. To what degree are differences in the (equilibrium) education distributions for
+Black and White people attributable to differences in child (under 15) mortality
+patterns by race?
+
+To understand differences in equilibrium attributable to differences in child mortality, I compute equilibria for each population using a common set of child mortality rates. In this case, I change white child mortality rates to match black child mortality rates. 
+```{r}
+
+#only the first three S matrices are impacted since this is for ages 0:15
+#these ages do not impact births so we do not need to recalculate the B matrices. 
+
+lw15 = cbind(zero, zero, zero, bw4, bw5, bw6, bw7, bw8, bw9, zero)
+lw25 = cbind(SB[[1]], zero, zero, zero, zero, zero, zero, zero, zero, zero)
+lw35 = cbind( zero, SB[[2]],zero, zero, zero, zero, zero, zero, zero, zero)
+lw45 = cbind( zero, zero, SB[[3]],zero, zero, zero, zero, zero, zero, zero)
+lw55 = cbind( zero, zero, zero, SW[[4]], zero, zero, zero, zero, zero, zero)
+lw65 = cbind( zero, zero, zero, zero, SW[[5]],zero, zero, zero, zero, zero)
+lw75 = cbind( zero, zero, zero, zero, zero, SW[[6]],zero, zero, zero, zero)
+lw85 = cbind( zero, zero, zero, zero, zero, zero, SW[[7]],zero, zero, zero)
+lw95 = cbind( zero, zero, zero, zero, zero, zero, zero, SW[[8]],zero, zero)
+lw105 = cbind( zero, zero, zero, zero, zero, zero, zero, zero, SW[[9]],zero)
+lesliew5 = rbind(lw15,lw25,lw35,lw45,lw55,lw65,lw75,lw85,lw95,lw105)
+
+
+
+#i should write this as a function so i don't have to keep copy pasting... 
+eqw5 = lesliew5^100 %*% nw 
+
+#this is the projection at time t+ 5*100 -> projection after 500 years have passed 
+
+wavg5 = (sum(eqw5[1:10])*4 + sum(eqw5[11:20])*10 + sum(eqw5[21:30])*12 + sum(eqw5[31:40])*14 + sum(eqw5[41:50])*16) / sum(eqw5)
+wu125 = (sum(eqw5[1:10]) + sum(eqw5[11:20]))/sum(eqw5)
+wg165 = sum(eqw5[41:50])/sum(eqw5)
+
+
+t5 = data.frame(NoAdjustment = c(wavg, bavg, wavg-bavg, wu12, bu12, wu12-bu12, wg16, bg16, wg16-bg16), 
+                SameFertility = c(wavg3, bavg, wavg3-bavg, wu123, bu12, wu123-bu12, wg163, bg16, wg163-bg16),
+                SameMaternalMort = c(wavg4, bavg, wavg4-bavg, wu124, bu12, wu124-bu12, wg164, bg16, wg164-bg16),
+                SameChildMort = c(wavg5, bavg, wavg5-bavg, wu125, bu12, wu125-bu12, wg165, bg16, wg165-bg16))
+rownames(t5) = c("White mean", "Black mean", "W-B", "White<12", "Black<12", "W-B<12", "White16+", "Black16+", "W-B16+")
+t(t5)
+
+
+
+```
+
+After setting the white child mortality schedule to match the black child morality schedule, the average number of years of education of white people increased by more than 1 year. Under these new conditions, white people attain approximately 1.4 more years of education than black people on average.  
+Therefore, child mortality appears to have a large impact on educational attainment. The differences in equilibrium education distributions for white and black people are largely attributable to child mortality. 
+
+Maternal mortality and child mortality seem to have opposite effects. This could be due to the fact that child mortality does not impact birth rates. 
+
+
+
+
+6. To what degree are differences in the education distributions for Black and White
+people after three generations attributable to differences in intergenerational
+mobility patterns between Black and White people?
+
+I assume that the length of a generation is approximately 27 years based on information presented in Preston on page 152.
+Then three generations is approximately 81 years. 
+Since each iteration of the Leslie matrix is an approximation of the next 5 years, we need to iterate ~16 times in order to project distributions after three generations. 
+First I project using the given intergenerational mobility constants for black and white separately. 
+Then I reproject the white population using the black intergenerational mobility constants. 
+
+
+```{r}
+genw3 = lesliew^16 %*% nw 
+genb3 = leslieb^16 %*% nb
+
+#this is the projection at time t+ 5*16 -> projection after 80 years have passed (approx 3 generations)
+#this projection uses the given edu attainment values for black and white people 
+
+wavg6 = (sum(genw3[1:10])*4 + sum(genw3[11:20])*10 + sum(genw3[21:30])*12 + sum(genw3[31:40])*14 + sum(genw3[41:50])*16) / sum(genw3)
+wu126 = (sum(genw3[1:10]) + sum(genw3[11:20]))/sum(genw3)
+wg166 = sum(genw3[41:50])/sum(genw3)
+
+bavg6 = (sum(genb3[1:10])*4 + sum(genb3[11:20])*10 + sum(genb3[21:30])*12 + sum(genb3[31:40])*14 + sum(genb3[41:50])*16) / sum(genb3)
+bu126 = (sum(genb3[1:10]) + sum(genb3[11:20]))/sum(genb3)
+bg166 = sum(genb3[41:50])/sum(genb3)
+
+
+t6 = data.frame(NoAdjustment = c(wavg, bavg, wavg-bavg, wu12, bu12, wu12-bu12, wg16, bg16, wg16-bg16), 
+                SameFertility = c(wavg3, bavg, wavg3-bavg, wu123, bu12, wu123-bu12, wg163, bg16, wg163-bg16),
+                SameMaternalMort = c(wavg4, bavg, wavg4-bavg, wu124, bu12, wu124-bu12, wg164, bg16, wg164-bg16),
+                SameChildMort = c(wavg5, bavg, wavg5-bavg, wu125, bu12, wu125-bu12, wg165, bg16, wg165-bg16),
+                ThreeGen = c(wavg6, bavg6, wavg6-bavg6, wu126, bu126, wu126-bu126, wg166, bg166, wg166-bg166))
+rownames(t6) = c("White mean", "Black mean", "W-B", "White<12", "Black<12", "W-B<12", "White16+", "Black16+", "W-B16+")
+t(t6)
+
+
+###############################################################################
+# the following projection is for 3 gen but with white and black having the same intergen mobility patterns 
+# i change white only 
+
+bw46 = matrix(nrow = 5, ncol =5)
+bw56 = matrix(nrow = 5, ncol =5)
+bw66 = matrix(nrow = 5, ncol =5)
+bw76 = matrix(nrow = 5, ncol =5)
+bw86 = matrix(nrow = 5, ncol =5)
+bw96 = matrix(nrow = 5, ncol =5)
+#for (k in 2:10) { #age ; not sure why this loop structure doesn't work but i can't spend anymore time perfecting it
+for (i in 1:5) { #moms educat 
+  for (j in 1:5) { #daughters educat 
+    
+    bw46[i,j] = (dwm[1,j]/(2*100000)*(fxw[j] + SB[[4]][i,j]*fxw[j]))*Mb[i,j]
+    bw56[i,j] = (dwm[1,j]/(2*100000)*(fxw[j] + SB[[5]][i,j]*fxw[j]))*Mb[i,j]
+    bw66[i,j] = (dwm[1,j]/(2*100000)*(fxw[j] + SB[[6]][i,j]*fxw[j]))*Mb[i,j]
+    bw76[i,j] = (dwm[1,j]/(2*100000)*(fxw[j] + SB[[7]][i,j]*fxw[j]))*Mb[i,j]
+    bw86[i,j] = (dwm[1,j]/(2*100000)*(fxw[j] + SB[[8]][i,j]*fxw[j]))*Mb[i,j]
+    bw96[i,j] = (dwm[1,j]/(2*100000)*(fxw[j] + SB[[9]][i,j]*fxw[j]))*Mb[i,j]
+    #we assume that F is the same for all age categories 
+    #we assume that the percent distribution of women in each edu category is constant  
+  }
+}
+
+lw16 = cbind(zero, zero, zero, bw46, bw56, bw66, bw76, bw86, bw96, zero)
+lw26 = cbind(SW[[1]], zero, zero, zero, zero, zero, zero, zero, zero, zero)
+lw36 = cbind( zero, SW[[2]],zero, zero, zero, zero, zero, zero, zero, zero)
+lw46 = cbind( zero, zero, SW[[3]],zero, zero, zero, zero, zero, zero, zero)
+lw56 = cbind( zero, zero, zero,SB[[4]], zero, zero, zero, zero, zero, zero)
+lw66 = cbind( zero, zero, zero, zero, SB[[5]],zero, zero, zero, zero, zero)
+lw76 = cbind( zero, zero, zero, zero, zero, SB[[6]],zero, zero, zero, zero)
+lw86 = cbind( zero, zero, zero, zero, zero, zero, SB[[7]],zero, zero, zero)
+lw96 = cbind( zero, zero, zero, zero, zero, zero, zero, SB[[8]],zero, zero)
+lw106 = cbind( zero, zero, zero, zero, zero, zero, zero, zero, SB[[9]],zero)
+lesliew6 = rbind(lw16,lw26,lw36,lw46,lw56,lw66,lw76,lw86,lw96,lw106)
+
+
+
+genw3a = lesliew6^16 %*% nw 
+
+
+#this is the projection at time t+ 5*16 -> projection after 80 years have passed (approx 3 generations)
+#this projection uses the given edu attainment values for black and white people 
+
+wavg6a = (sum(genw3a[1:10])*4 + sum(genw3[11:20])*10 + sum(genw3a[21:30])*12 + sum(genw3a[31:40])*14 + sum(genw3a[41:50])*16) / sum(genw3a)
+wu126a = (sum(genw3a[1:10]) + sum(genw3a[11:20]))/sum(genw3a)
+wg166a = sum(genw3a[41:50])/sum(genw3a)
+
+
+
+t6a = data.frame(NoAdjustment = c(wavg, bavg, wavg-bavg, wu12, bu12, wu12-bu12, wg16, bg16, wg16-bg16), 
+                SameFertility = c(wavg3, bavg, wavg3-bavg, wu123, bu12, wu123-bu12, wg163, bg16, wg163-bg16),
+                SameMaternalMort = c(wavg4, bavg, wavg4-bavg, wu124, bu12, wu124-bu12, wg164, bg16, wg164-bg16),
+                SameChildMort = c(wavg5, bavg, wavg5-bavg, wu125, bu12, wu125-bu12, wg165, bg16, wg165-bg16),
+                ThreeGen = c(wavg6, bavg6, wavg6-bavg6, wu126, bu126, wu126-bu126, wg166, bg166, wg166-bg166),
+                ThreeGenSameMobility = c(wavg6a, bavg6, wavg6a-bavg6, wu126a, bu126, wu126a-bu126, wg166a, bg166, wg166a-bg166))
+rownames(t6a) = c("White mean", "Black mean", "W-B", "White<12", "Black<12", "W-B<12", "White16+", "Black16+", "W-B16+")
+t(t6a)
+
+
+```
+
+After three generations, the distributions for black and white educational attainment do not have large differences. The average number of years of education attained by black people is 12.54 while the average number of years of education attained by white people is 12.33. However, after using the same intergenerational mobility constants for the black and white populations, the average number of years of education attained by white people drops by approximately 0.7 years. Therefore, differences in education distributions for Black and White populations after three generations are not attributable to intergenerational mobility patterns. 
+
+
+7. What would be the equilibrium education distributions for Black and White people
+if there were NO intergenerational educational mobility?
+
+If there were no intergenerational educational mobility, mothers would only produce daughters at their same educational level. So moms and daughters have identical educational attainment. (this is the same as rows 13-18)
+To measure the effect of no mobility, I modify the associations between mom's and daughter's schooling in the mobility tables and also the marginal distribution of schooling. (top of page 286) 
+
+
+The mobility matrix must be an identity matrix which will produce a replicate of the initial conditions when iterated each year. 
+I recalculate the white and black equilibrium distributions using identity mobility matrices. 
+
+```{r}
+##### BLACK 
+
+Mb7= diag(5) #create a new mobility matrix that is an identity matrix 
+
+bb47 = matrix(nrow = 5, ncol =5)
+bb57 = matrix(nrow = 5, ncol =5)
+bb67 = matrix(nrow = 5, ncol =5)
+bb77 = matrix(nrow = 5, ncol =5)
+bb87 = matrix(nrow = 5, ncol =5)
+bb97 = matrix(nrow = 5, ncol =5)
+#for (k in 2:10) { #age ; not sure why this loop structure doesn't work but i can't spend anymore time perfecting it
+for (i in 1:5) { #moms educat 
+  for (j in 1:5) { #daughters educat 
+    #BB[[k-1]][i,j] = (dbm[k,j]/(2*100000*peredub[j])*(fxb[j] + S[[k-1]][j,j]*fxb[j]))*Mb[i,j]
+    bb47[i,j] = (dbm[1,j]/(2*100000)*(fxb[j] + SB[[4]][i,j]*fxb[j]))*Mb7[i,j]
+    bb57[i,j] = (dbm[1,j]/(2*100000)*(fxb[j] + SB[[5]][i,j]*fxb[j]))*Mb7[i,j]
+    bb67[i,j] = (dbm[1,j]/(2*100000)*(fxb[j] + SB[[6]][i,j]*fxb[j]))*Mb7[i,j]
+    bb77[i,j] = (dbm[1,j]/(2*100000)*(fxb[j] + SB[[7]][i,j]*fxb[j]))*Mb7[i,j]
+    bb87[i,j] = (dbm[1,j]/(2*100000)*(fxb[j] + SB[[8]][i,j]*fxb[j]))*Mb7[i,j]
+    bb97[i,j] = (dbm[1,j]/(2*100000)*(fxb[j] + SB[[9]][i,j]*fxb[j]))*Mb7[i,j]
+    
+    #bb4[i,j] = (dbm[4,j]/(2*100000*peredub[j])*(fxb[j] + SB[[3]][j,j]*fxb[j]))*Mb[i,j]
+    #bb5[i,j] = (dbm[5,j]/(2*100000*peredub[j])*(fxb[j] + SB[[4]][j,j]*fxb[j]))*Mb[i,j]
+    #bb6[i,j] = (dbm[6,j]/(2*100000*peredub[j])*(fxb[j] + SB[[5]][j,j]*fxb[j]))*Mb[i,j]
+    #bb7[i,j] = (dbm[7,j]/(2*100000*peredub[j])*(fxb[j] + SB[[6]][j,j]*fxb[j]))*Mb[i,j]
+    #bb8[i,j] = (dbm[8,j]/(2*100000*peredub[j])*(fxb[j] + SB[[7]][j,j]*fxb[j]))*Mb[i,j]
+    #bb9[i,j] = (dbm[9,j]/(2*100000*peredub[j])*(fxb[j] + SB[[8]][j,j]*fxb[j]))*Mb[i,j]
+    #we assume that F is the same for all age categories 
+    #we assume that the percent distribution of women in each edu category is constant
+    #we assume that l0 does not need to be divided by the total number of women in each edu category... 
+  }
+}
+
+
+zero = matrix(0, nrow=5, ncol = 5)
+lb17 = cbind(zero, zero, zero, bb47, bb57, bb67, bb77, bb87, bb97, zero)
+lb27 = cbind(SB[[1]], zero, zero, zero, zero, zero, zero, zero, zero, zero)
+lb37 = cbind( zero, SB[[2]],zero, zero, zero, zero, zero, zero, zero, zero)
+lb47 = cbind( zero, zero, SB[[3]],zero, zero, zero, zero, zero, zero, zero)
+lb57 = cbind( zero, zero, zero,SB[[4]], zero, zero, zero, zero, zero, zero)
+lb67 = cbind( zero, zero, zero, zero, SB[[5]],zero, zero, zero, zero, zero)
+lb77 = cbind( zero, zero, zero, zero, zero, SB[[6]],zero, zero, zero, zero)
+lb87 = cbind( zero, zero, zero, zero, zero, zero, SB[[7]],zero, zero, zero)
+lb97 = cbind( zero, zero, zero, zero, zero, zero, zero, SB[[8]],zero, zero)
+lb107 = cbind( zero, zero, zero, zero, zero, zero, zero, zero, SB[[9]],zero)
+leslieb7 = rbind(lb17,lb27,lb37,lb47,lb57,lb67,lb77,lb87,lb97,lb107)
+
+
+
+
+################################################################################
+# WHITE 
+
+Mw7= diag(5) #create a new mobility matrix that is an identity matrix 
+
+bw47 = matrix(nrow = 5, ncol =5)
+bw57 = matrix(nrow = 5, ncol =5)
+bw67 = matrix(nrow = 5, ncol =5)
+bw77 = matrix(nrow = 5, ncol =5)
+bw87 = matrix(nrow = 5, ncol =5)
+bw97 = matrix(nrow = 5, ncol =5)
+
+for (i in 1:5) { #moms educat 
+  for (j in 1:5) { #daughters educat 
+    
+    bw47[i,j] = (dwm[1,j]/(2*100000)*(fxw[j] + SW[[4]][i,j]*fxw[j]))*Mw7[i,j]
+    bw57[i,j] = (dwm[1,j]/(2*100000)*(fxw[j] + SW[[5]][i,j]*fxw[j]))*Mw7[i,j]
+    bw67[i,j] = (dwm[1,j]/(2*100000)*(fxw[j] + SW[[6]][i,j]*fxw[j]))*Mw7[i,j]
+    bw77[i,j] = (dwm[1,j]/(2*100000)*(fxw[j] + SW[[7]][i,j]*fxw[j]))*Mw7[i,j]
+    bw87[i,j] = (dwm[1,j]/(2*100000)*(fxw[j] + SW[[8]][i,j]*fxw[j]))*Mw7[i,j]
+    bw97[i,j] = (dwm[1,j]/(2*100000)*(fxw[j] + SW[[9]][i,j]*fxw[j]))*Mw7[i,j]
+    #we assume that F is the same for all age categories 
+    #we assume that the percent distribution of women in each edu category is constant  
+  }
+}
+
+
+zero = matrix(0, nrow=5, ncol = 5)
+lw17 = cbind(zero, zero, zero, bw47, bw57, bw67, bw77, bw87, bw97, zero)
+lw27 = cbind(SW[[1]], zero, zero, zero, zero, zero, zero, zero, zero, zero)
+lw37 = cbind( zero, SW[[2]],zero, zero, zero, zero, zero, zero, zero, zero)
+lw47 = cbind( zero, zero, SW[[3]],zero, zero, zero, zero, zero, zero, zero)
+lw57 = cbind( zero, zero, zero,SW[[4]], zero, zero, zero, zero, zero, zero)
+lw67 = cbind( zero, zero, zero, zero, SW[[5]],zero, zero, zero, zero, zero)
+lw77 = cbind( zero, zero, zero, zero, zero, SW[[6]],zero, zero, zero, zero)
+lw87 = cbind( zero, zero, zero, zero, zero, zero, SW[[7]],zero, zero, zero)
+lw97 = cbind( zero, zero, zero, zero, zero, zero, zero, SW[[8]],zero, zero)
+lw107 = cbind( zero, zero, zero, zero, zero, zero, zero, zero, SW[[9]],zero)
+lesliew7 = rbind(lw17,lw27,lw37,lw47,lw57,lw67,lw77,lw87,lw97,lw107)
+
+
+################################################################################
+# CALCULATE EQUILIBRIA 
+
+eqb7 = leslieb7^100 %*% nb
+eqw7 = lesliew7^100 %*% nw 
+
+wavg7 = (sum(eqw7[1:10])*4 + sum(eqw7[11:20])*10 + sum(eqw7[21:30])*12 + sum(eqw7[31:40])*14 + sum(eqw7[41:50])*16) / sum(eqw7)
+wu127 = (sum(eqw7[1:10]) + sum(eqw7[11:20]))/sum(eqw7)
+wg167 = sum(eqw7[41:50])/sum(eqw7)
+
+bavg7 = (sum(eqb7[1:10])*4 + sum(eqb7[11:20])*10 + sum(eqb7[21:30])*12 + sum(eqb7[31:40])*14 + sum(eqb7[41:50])*16) / sum(eqb7)
+bu127 = (sum(eqb7[1:10]) + sum(eqb7[11:20]))/sum(eqb7)
+bg167 = sum(eqb7[41:50])/sum(eqb7)
+
+
+t7 = data.frame(NoAdjustment = c(wavg, bavg, wavg-bavg, wu12, bu12, wu12-bu12, wg16, bg16, wg16-bg16), 
+                SameFertility = c(wavg3, bavg, wavg3-bavg, wu123, bu12, wu123-bu12, wg163, bg16, wg163-bg16),
+                SameMaternalMort = c(wavg4, bavg, wavg4-bavg, wu124, bu12, wu124-bu12, wg164, bg16, wg164-bg16),
+                SameChildMort = c(wavg5, bavg, wavg5-bavg, wu125, bu12, wu125-bu12, wg165, bg16, wg165-bg16),
+                ThreeGen = c(wavg6, bavg6, wavg6-bavg6, wu126, bu126, wu126-bu126, wg166, bg166, wg166-bg166),
+                ThreeGenSameMobility = c(wavg6a, bavg6, wavg6a-bavg6, wu126a, bu126, wu126a-bu126, wg166a, bg166, wg166a-bg166),
+                NoIntergenMobility = c(wavg7, bavg7, wavg7-bavg7, wu127, bu127, wu127-bu127, wg167, bg167, wg167-bg167))
+rownames(t7) = c("White mean", "Black mean", "W-B", "White<12", "Black<12", "W-B<12", "White16+", "Black16+", "W-B16+")
+t(t7)
+
+
+
+```
+The white and black distributions of education attainment do not change when there is no intergenerational mobility. This suggests that the differences between the white and black distributions of education attainment are not due to mobility, but rather due to differences in maternal mortality, child mortality, and fertility structures of each population. 
+   
+
+8. What would the equilibrium distributions be if mother's and daughter's educational
+attainments were statistically independent?
+
+Under conditions of perfect mobility, fertility does not affect edu distributions (Mare p289). All children have equal chance of education attainment. 
+
+When two events are independent, the following must hold: P(A and B) = P(A)*P(B). 
+Therefore, we confirm that p(mom's edu = x AND child's edu = x) = p(child's edu = x) * p(mom's edu = x). 
+A mobility matrix with all entries equal to 0.2 ensures that the statement above holds for all possible edu attainment levels. Therefore, in order to determine equilibrium distributions if the mother's and daughter's educational attainments are statistically independent, I use a mobility matrix that is a 5x5 matrix with all entries equal to 0.2. 
+```{r}
+##### BLACK 
+
+Mb8= matrix(0.2,5,5) #create a new mobility matrix that is an identity matrix 
+
+bb48 = matrix(nrow = 5, ncol =5)
+bb58 = matrix(nrow = 5, ncol =5)
+bb68 = matrix(nrow = 5, ncol =5)
+bb78 = matrix(nrow = 5, ncol =5)
+bb88 = matrix(nrow = 5, ncol =5)
+bb98 = matrix(nrow = 5, ncol =5)
+#for (k in 2:10) { #age ; not sure why this loop structure doesn't work but i can't spend anymore time perfecting it
+for (i in 1:5) { #moms educat 
+  for (j in 1:5) { #daughters educat 
+    #BB[[k-1]][i,j] = (dbm[k,j]/(2*100000*peredub[j])*(fxb[j] + S[[k-1]][j,j]*fxb[j]))*Mb[i,j]
+    bb48[i,j] = (dbm[1,j]/(2*100000)*(fxb[j] + SB[[4]][i,j]*fxb[j]))*Mb8[i,j]
+    bb58[i,j] = (dbm[1,j]/(2*100000)*(fxb[j] + SB[[5]][i,j]*fxb[j]))*Mb8[i,j]
+    bb68[i,j] = (dbm[1,j]/(2*100000)*(fxb[j] + SB[[6]][i,j]*fxb[j]))*Mb8[i,j]
+    bb78[i,j] = (dbm[1,j]/(2*100000)*(fxb[j] + SB[[7]][i,j]*fxb[j]))*Mb8[i,j]
+    bb88[i,j] = (dbm[1,j]/(2*100000)*(fxb[j] + SB[[8]][i,j]*fxb[j]))*Mb8[i,j]
+    bb98[i,j] = (dbm[1,j]/(2*100000)*(fxb[j] + SB[[9]][i,j]*fxb[j]))*Mb8[i,j]
+    
+   
+    #we assume that F is the same for all age categories 
+    #we assume that the percent distribution of women in each edu category is constant
+    #we assume that l0 does not need to be divided by the total number of women in each edu category... 
+  }
+}
+
+
+zero = matrix(0, nrow=5, ncol = 5)
+lb18 = cbind(zero, zero, zero, bb48, bb58, bb68, bb78, bb88, bb98, zero)
+lb28 = cbind(SB[[1]], zero, zero, zero, zero, zero, zero, zero, zero, zero)
+lb38 = cbind( zero, SB[[2]],zero, zero, zero, zero, zero, zero, zero, zero)
+lb48 = cbind( zero, zero, SB[[3]],zero, zero, zero, zero, zero, zero, zero)
+lb58 = cbind( zero, zero, zero,SB[[4]], zero, zero, zero, zero, zero, zero)
+lb68 = cbind( zero, zero, zero, zero, SB[[5]],zero, zero, zero, zero, zero)
+lb78 = cbind( zero, zero, zero, zero, zero, SB[[6]],zero, zero, zero, zero)
+lb88 = cbind( zero, zero, zero, zero, zero, zero, SB[[7]],zero, zero, zero)
+lb98 = cbind( zero, zero, zero, zero, zero, zero, zero, SB[[8]],zero, zero)
+lb108 = cbind( zero, zero, zero, zero, zero, zero, zero, zero, SB[[9]],zero)
+leslieb8 = rbind(lb18,lb28,lb38,lb48,lb58,lb68,lb78,lb88,lb98,lb108)
+
+
+
+
+################################################################################
+# WHITE 
+
+Mw8= matrix(0.2, 5,5) #create a new mobility matrix that is an identity matrix 
+
+bw48 = matrix(nrow = 5, ncol =5)
+bw58 = matrix(nrow = 5, ncol =5)
+bw68 = matrix(nrow = 5, ncol =5)
+bw78 = matrix(nrow = 5, ncol =5)
+bw88 = matrix(nrow = 5, ncol =5)
+bw98 = matrix(nrow = 5, ncol =5)
+
+for (i in 1:5) { #moms educat 
+  for (j in 1:5) { #daughters educat 
+    
+    bw48[i,j] = (dwm[1,j]/(2*100000)*(fxw[j] + SW[[4]][i,j]*fxw[j]))*Mw8[i,j]
+    bw58[i,j] = (dwm[1,j]/(2*100000)*(fxw[j] + SW[[5]][i,j]*fxw[j]))*Mw8[i,j]
+    bw68[i,j] = (dwm[1,j]/(2*100000)*(fxw[j] + SW[[6]][i,j]*fxw[j]))*Mw8[i,j]
+    bw78[i,j] = (dwm[1,j]/(2*100000)*(fxw[j] + SW[[7]][i,j]*fxw[j]))*Mw8[i,j]
+    bw88[i,j] = (dwm[1,j]/(2*100000)*(fxw[j] + SW[[8]][i,j]*fxw[j]))*Mw8[i,j]
+    bw98[i,j] = (dwm[1,j]/(2*100000)*(fxw[j] + SW[[9]][i,j]*fxw[j]))*Mw8[i,j]
+    #we assume that F is the same for all age categories 
+    #we assume that the percent distribution of women in each edu category is constant  
+  }
+}
+
+
+zero = matrix(0, nrow=5, ncol = 5)
+lw18 = cbind(zero, zero, zero, bw48, bw58, bw68, bw78, bw88, bw98, zero)
+lw28 = cbind(SW[[1]], zero, zero, zero, zero, zero, zero, zero, zero, zero)
+lw38 = cbind( zero, SW[[2]],zero, zero, zero, zero, zero, zero, zero, zero)
+lw48 = cbind( zero, zero, SW[[3]],zero, zero, zero, zero, zero, zero, zero)
+lw58 = cbind( zero, zero, zero,SW[[4]], zero, zero, zero, zero, zero, zero)
+lw68 = cbind( zero, zero, zero, zero, SW[[5]],zero, zero, zero, zero, zero)
+lw78 = cbind( zero, zero, zero, zero, zero, SW[[6]],zero, zero, zero, zero)
+lw88 = cbind( zero, zero, zero, zero, zero, zero, SW[[7]],zero, zero, zero)
+lw98 = cbind( zero, zero, zero, zero, zero, zero, zero, SW[[8]],zero, zero)
+lw108 = cbind( zero, zero, zero, zero, zero, zero, zero, zero, SW[[9]],zero)
+lesliew8 = rbind(lw18,lw28,lw38,lw48,lw58,lw68,lw78,lw88,lw98,lw108)
+
+
+################################################################################
+# CALCULATE EQUILIBRIA 
+
+eqb8 = leslieb8^100 %*% nb
+eqw8 = lesliew8^100 %*% nw 
+
+wavg8 = (sum(eqw8[1:10])*4 + sum(eqw8[11:20])*10 + sum(eqw8[21:30])*12 + sum(eqw8[31:40])*14 + sum(eqw8[41:50])*16) / sum(eqw8)
+wu128 = (sum(eqw8[1:10]) + sum(eqw8[11:20]))/sum(eqw8)
+wg168 = sum(eqw8[41:50])/sum(eqw8)
+
+bavg8 = (sum(eqb8[1:10])*4 + sum(eqb8[11:20])*10 + sum(eqb8[21:30])*12 + sum(eqb8[31:40])*14 + sum(eqb8[41:50])*16) / sum(eqb8)
+bu128 = (sum(eqb8[1:10]) + sum(eqb8[11:20]))/sum(eqb8)
+bg168 = sum(eqb8[41:50])/sum(eqb8)
+
+
+t8 = data.frame(NoAdjustment = c(wavg, bavg, wavg-bavg, wu12, bu12, wu12-bu12, wg16, bg16, wg16-bg16), 
+                SameFertility = c(wavg3, bavg, wavg3-bavg, wu123, bu12, wu123-bu12, wg163, bg16, wg163-bg16),
+                SameMaternalMort = c(wavg4, bavg, wavg4-bavg, wu124, bu12, wu124-bu12, wg164, bg16, wg164-bg16),
+                SameChildMort = c(wavg5, bavg, wavg5-bavg, wu125, bu12, wu125-bu12, wg165, bg16, wg165-bg16),
+                ThreeGen = c(wavg6, bavg6, wavg6-bavg6, wu126, bu126, wu126-bu126, wg166, bg166, wg166-bg166),
+                ThreeGenSameMobility = c(wavg6a, bavg6, wavg6a-bavg6, wu126a, bu126, wu126a-bu126, wg166a, bg166, wg166a-bg166),
+                NoIntergenMobility = c(wavg7, bavg7, wavg7-bavg7, wu127, bu127, wu127-bu127, wg167, bg167, wg167-bg167),
+                PerfectMobility = c(wavg8, bavg8, wavg8-bavg8, wu128, bu128, wu128-bu128, wg168, bg168, wg168-bg168))
+rownames(t8) = c("White mean", "Black mean", "W-B", "White<12", "Black<12", "W-B<12", "White16+", "Black16+", "W-B16+")
+t(t8)
+
+
+
+```
+As expected, under conditions of perfect mobility, the equilibrium distributions match education distributions under given mobility constraints. 
+
+
+
+9. Extra credit: Choose one of the questions above and plot the population
+educational distribution over time to determine (a) whether equilibria exist and
+(b) how long it takes to achieve.
+
+I'm confused about what is meant by "educational distribution." In the earlier questions, I provided the values that the Mare paper used to describe average educational attainment. However, in the case of plotting "educational distribution" I'm unsure which of the values calculated in the Mare paper to use.... For now, I will proceed using the average years of education attained for each population. I think it would be cool to plot a distribution curve (like bell curve) but this is tricky to plot over time. 
+
+
+
+
+
+
+
+
+
+
+```{r}
+# a function for quickly plotting all conditions 
+
+library(ggplot2) 
+eqplot = function(lb, lw, title) { 
+
+pb = matrix(nrow = 50, ncol = 100)
+pw = matrix(nrow = 50, ncol = 100)
+wavgp = data.frame()
+bavgp = data.frame()
+
+
+
+pb[1:50, 1] = lb %*% nb
+pw[1:50, 1] = lw %*% nw
+
+#this loop is equivalent to exponentiating the leslie matrix one increment at a time 
+for (i in 2:100) {
+pb[1:50, i] = lb %*% pb[1:50, i-1]
+pw[1:50, i] = lw %*% pw[1:50, i-1]
+
+}
+
+for (i in 1:100) {
+
+wavgpt = data.frame((sum(pb[1:50, i][1:10])*4 + sum(pb[1:50, i][11:20])*10 + sum(pb[1:50, i][21:30])*12 + sum(pb[1:50, i][31:40])*14 + sum(pb[1:50, i][41:50])*16) / sum(pb[1:50, i]))
+
+wavgp = rbind(wavgp, wavgpt)
+
+
+
+bavgpt = data.frame((sum(pw[1:50, i][1:10])*4 + sum(pw[1:50, i][11:20])*10 + sum(pw[1:50, i][21:30])*12 + sum(pw[1:50, i][31:40])*14 + sum(pw[1:50, i][41:50])*16) / sum(pw[1:50, i]))
+
+bavgp = rbind(bavgp, bavgpt)
+
+}
+
+pdata = data.frame(year = c(seq(5, 500, by = 5)), 
+                            wmean = wavgp[,1], 
+                            bmean = bavgp[,1])
+library(ggplot2)
+ggplot(pdata) + geom_point(aes(x = year, y = wmean), shape = 23) + 
+  geom_point(aes(x = year, y = bmean)) + 
+  theme_bw() +
+  xlab("Number of years after initial conditions") + 
+  ylab("Average number of years of education attained") + 
+  ggtitle(title)
+
+}
+
+#for standard conditions
+eqplot(leslieb, lesliew, title = "Standard Conditions (q1)")
+
+#for conditions outlined in q7
+eqplot(leslieb7, lesliew7, title = "No intergenerational mobility (q7)")
+
+
+#for conditions outlined in q8 
+eqplot(leslieb8, lesliew8, title = "Perfect Mobility (q8)")
+
+#for conditions outlined in q3 
+eqplot(leslieb, lesliew3, title = "Matching fertility patterns (q3)")
+
+#for conditions outlined in q4
+eqplot(leslieb, lesliew4, title = "Matching maternal mortality (q4)")
+
+#for conditions outlined in q5
+eqplot(leslieb, lesliew4, title = "Matching child mortality (q5)")
+
+#for conditions outlined in q6
+eqplot(leslieb, lesliew4, title = "Matching mobility (q6)")
+
+```
+
+
+For nearly all of the questions in this exercise, equilibria occur after approximately 100 years. In every case, the average number of years of education attained by the White population is higher than the average number of years of education attained by the Black population.  
+However, the conditions outlined in question 7 do not produce an equilibrium in the black population. When there is no intergenerational educational mobility, the average number of years of education attained has a downward slope, even 500 years after initial conditions. It is curious that the white population reaches equilibrium when there is no intergenerational mobility.... 

@@ -1,0 +1,79 @@
+---
+title: "mare vintage attempt"
+author: "Hannah Olson-Williams"
+date: "1/19/2022"
+output: word_document
+---
+Attempt to generate an "M" matrix for each county. 
+An M matrix is a way to keep track of transition probabilities. 
+(This requires us to assume/create two states that each county will "transition" between)
+M matrices have S and B submatrices 
+where S submatrices contain age-specific survival and mobility probabilities and 
+where B submatrices account for births and maternal mortality in addition to age-specific survival and mobility. 
+
+I do not have age-specific data, but I do have several years of data..... 2010 through 2020 (but maybe missing for some columns, need to dig more)
+ 
+* Mare's analyses require: 
+  + age sex education specific life tables 
+    - year county income specific life tables 
+    - prob tricky to get income and population specific data, not sure
+    - not sure if year in place of age will affect assumptions 
+  + intergenerational educational mobility (race-specific)
+    - interyear income mobility (urbanicity-specific)
+    - would need to create income categories/cut offs
+  + percent distribution of educational attainment (race-specific) 
+    - percent distribution of income (urbanicity-specific)
+  + gross reproduction rate by educational attainment (race-specific) 
+    - gross reproduction rate by income attainment (urbanicity-specific)
+    - GRR = number of daughters per female. Not sure how requirements might change when using year in place of age 
+    
+    use births and in migration as the same (combine)
+    use deaths and out migration as the same (combine)
+    
+    
+    
+how to connect to social determinants of mental health??? 
+Having 3142 separate life tables is wayyyyy to ambitious.... need to select only one county??? 
+or change the question 
+
+Dane County WI: 55025	
+Austin County TX: 48015
+    
+```{r}
+setwd("H:/amy/equilibrium")
+library(haven)
+v = read_sas("vintage2020.sas7bdat")
+
+#need matrix with rows = year and cols = cat of interest 
+#each entry = total number of people in each category 
+#it's easiest to get edu categories since CHRR already has these...
+# I'm not immediately sure how/where to get income cats (though I'm sure it's possible)
+
+#this is massive and will almost crash. run with caution 
+ed = read_sas("t_measure_data_years.sas7bdat")
+edd = ed[ed$state_fips == 55 & ed$county_fips == "025",] #for dane county WI 
+eda = ed[ed$state_fips == 48 & ed$county_fips == "015",] #for austin county TX 
+#chrr edu measures: 
+#hs completion 168 (only available for most recent year)
+#some college 69
+#hs grad 21
+
+#ACS: less than hs, hs completion, some college, bachelors or higher (TABLE S1501)
+# ACS has these values for 2010 through 2019
+# race/eth, age, gender, income are also available for each edu subgroup 
+# for now playing w chrr data even tho only 2 cats because pulling/wrangling new data is time consuming - will do later if/when we decide this is a good use of time  
+
+
+#FOR DANE COUNTY 
+dhsgrad = edd[edd$measure_id == 21,]
+dscollege = edd[edd$measure_id == 69,]
+dedmat = data.frame(year = dhsgrad$year, hsgrad = dhsgrad$raw_value, college =c("", dscollege$raw_value))
+
+#FOR AUSTIN COUNTY 
+ahsgrad = eda[eda$measure_id == 21,]
+ascollege = eda[eda$measure_id == 69,]
+aedmat = data.frame(year = ahsgrad$year, hsgrad = ahsgrad$raw_value, college =c("", ascollege$raw_value))
+
+
+
+```
